@@ -35,3 +35,5 @@ running:
 
 IDEAS:
 in waiting show working unit and pause unit time
+blinking if timer is done
+
