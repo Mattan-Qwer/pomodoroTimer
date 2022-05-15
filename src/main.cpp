@@ -7,7 +7,7 @@
 #define PIN_ROTARY_A 5
 #define PIN_ROTARY_B 6
 
-#define SECOND 1000L // how many millis do a second have
+#define SECOND 100L // how many millis do a second have
 #define LEDUPDATETIME 100L
 
 #define DEBUG
@@ -19,19 +19,24 @@ void set_timer(long time);
 uint32_t colorToUInt(uint8_t red, uint8_t green, uint8_t blue);
 uint8_t UIntToColor(uint8_t rgbSelector, uint32_t color);
 void writeLEDs();
+void updateTimer();
+void restartTimer();
 
 // objects
 Adafruit_NeoPixel pixels(LED_COUNT, PIN, NEO_GRB + NEO_KHZ800);
 Encoder myEnc(PIN_ROTARY_A, PIN_ROTARY_B);
 
 void setup() {
+#ifdef DEBUG
   Serial.begin(9600);
   Serial.println("Hello World!");
+#endif
   pinMode(LED_BUILTIN, OUTPUT);
   pixels.begin();
 }
 
 unsigned long endTime = 20;
+unsigned long pauseTime = 20;
 const unsigned long TWENTY_MINUTES = SECOND * 60L * 20L;
 const unsigned long FIVE_MINUTES = SECOND * 60L * 5L;
 
@@ -39,26 +44,18 @@ int32_t leds[LED_COUNT];
 
 bool running = false;
 bool working = false;
+bool pause = false;
 long oldPosition = -99;
 
 void loop() {
-  if (!running) {
-    working = !working;
-    if (working) {
-      endTime = millis() + TWENTY_MINUTES;
-    } else {
-      endTime = millis() + FIVE_MINUTES;
-    }
-    running = true;
+  restartTimer();
 
-  } else {
-    long remainingTime = long(endTime - millis());
-    if (remainingTime > 0) {
-      set_timer(remainingTime);
-    } else {
-      running = false;
-    }
+  updateTimer();
+#ifdef DEBUG
+  if (running) {
+    pause = true;
   }
+#endif
   writeLEDs();
 #ifdef DEBUG
   long newPosition = myEnc.read();
@@ -121,7 +118,34 @@ void writeLEDs() {
                                             UIntToColor(1, leds[ii]),
                                             UIntToColor(0, leds[ii])));
     }
+
+    if (pause && (writeTime >> 10) % 2) {
+      pixels.clear();
+    }
     pixels.show();
     writeTime += LEDUPDATETIME;
+  }
+}
+
+void updateTimer() {
+  if (!pause && running) {
+    long remainingTime = long(endTime - millis());
+    if (remainingTime > 0) {
+      set_timer(remainingTime);
+    } else {
+      running = false;
+    }
+  }
+}
+
+void restartTimer() {
+  if (!running) {
+    working = !working;
+    if (working) {
+      endTime = millis() + TWENTY_MINUTES;
+    } else {
+      endTime = millis() + FIVE_MINUTES;
+    }
+    running = true;
   }
 }
