@@ -45,7 +45,7 @@ int32_t leds[LED_COUNT];
 bool running = false;
 bool working = false;
 bool pause = false;
-long oldPosition = -99;
+long oldRotaryPosition = -99;
 
 void loop() {
   restartTimer();
@@ -58,10 +58,10 @@ void loop() {
 #endif
   writeLEDs();
 #ifdef DEBUG
-  long newPosition = myEnc.read();
-  if (newPosition != oldPosition) {
-    oldPosition = newPosition;
-    Serial.println(newPosition);
+  long newRotaryPosition = myEnc.read();
+  if (newRotaryPosition != oldRotaryPosition) {
+    oldRotaryPosition = newRotaryPosition;
+    Serial.println(newRotaryPosition);
   }
 #endif
 }

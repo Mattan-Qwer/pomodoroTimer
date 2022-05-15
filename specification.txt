@@ -1,0 +1,37 @@
+Timer with 20 minutes work unit and 5 min break unit at startup:
+times can be changed via rotary and button.
+
+Button: 
+∙ start unit if realeased and not rotary changed and not long pressed
+∙ pause unit if running
+∙ continue if paused and running
+∙ reset if long pressed
+
+Rotary:
+∙ set work unit time if not running (in minutes)
+∙ set break unit time if not running and Button pressed (in minutes)
+∙ set time of unit up/down by seconds
+
+Progress:
+∙ unit in running
+∙ unit is not paused
+∙ time to end of unit is shown
+
+Waiting:
+∙ show total work unit time
+∙ show total break unit time if button pressed
+
+Pause mode:
+∙ unit is not running
+∙ LEDs blink every two seconds
+
+
+
+Glosar:
+long pressed: 
+unit:
+running:
+
+
+IDEAS:
+in waiting show working unit and pause unit time
