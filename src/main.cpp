@@ -1,10 +1,14 @@
 #include <Arduino.h>
 
 #include <Adafruit_NeoPixel.h>
+#include <Encoder.h>
 
 #define PIN A1
+#define PIN_ROTARY_A 5
+#define PIN_ROTARY_B 6
 
-#define SECOND 100L
+#define SECOND 1000L // how many millis do a second have
+#define LEDUPDATETIME 100L
 
 #define DEBUG
 
@@ -16,7 +20,9 @@ uint32_t colorToUInt(uint8_t red, uint8_t green, uint8_t blue);
 uint8_t UIntToColor(uint8_t rgbSelector, uint32_t color);
 void writeLEDs();
 
+// objects
 Adafruit_NeoPixel pixels(LED_COUNT, PIN, NEO_GRB + NEO_KHZ800);
+Encoder myEnc(PIN_ROTARY_A, PIN_ROTARY_B);
 
 void setup() {
   Serial.begin(9600);
@@ -33,6 +39,7 @@ int32_t leds[LED_COUNT];
 
 bool running = false;
 bool working = false;
+long oldPosition = -99;
 
 void loop() {
   if (!running) {
@@ -53,10 +60,12 @@ void loop() {
     }
   }
   writeLEDs();
-
-  delay(100);
 #ifdef DEBUG
-
+  long newPosition = myEnc.read();
+  if (newPosition != oldPosition) {
+    oldPosition = newPosition;
+    Serial.println(newPosition);
+  }
 #endif
 }
 
@@ -79,7 +88,7 @@ void set_timer(long time) {
   }
 #ifdef DEBUG
 
-  Serial.println(255L * overmillis / (60L * SECOND));
+  // Serial.println(255L * overmillis / (60L * SECOND));
 #endif
 }
 
@@ -104,12 +113,15 @@ uint32_t colorToUInt(uint8_t red, uint8_t green, uint8_t blue) {
 uint8_t UIntToColor(uint8_t rgbSelector, uint32_t color) {
   return color >> (rgbSelector * 8) & 0b11111111;
 }
-
+unsigned long writeTime = 0;
 void writeLEDs() {
-  for (int ii = 0; ii < LED_COUNT; ii++) {
-    pixels.setPixelColor(ii, pixels.Color(UIntToColor(2, leds[ii]),
-                                          UIntToColor(1, leds[ii]),
-                                          UIntToColor(0, leds[ii])));
+  if (writeTime <= millis()) {
+    for (int ii = 0; ii < LED_COUNT; ii++) {
+      pixels.setPixelColor(ii, pixels.Color(UIntToColor(2, leds[ii]),
+                                            UIntToColor(1, leds[ii]),
+                                            UIntToColor(0, leds[ii])));
+    }
+    pixels.show();
+    writeTime += LEDUPDATETIME;
   }
-  pixels.show();
 }
