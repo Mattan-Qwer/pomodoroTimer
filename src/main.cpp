@@ -3,12 +3,14 @@
 #include <Adafruit_NeoPixel.h>
 #include <Encoder.h>
 
+#include "button_handling.h"
+
 #define PIN A1
 #define PIN_ROTARY_A 5
 #define PIN_ROTARY_B 6
 #define BUTTON_PIN 9
 
-#define SECOND 100L // how many millis do a second have
+#define SECOND 20L // how many millis do a second have
 #define LEDUPDATETIME 100L
 
 #define LONG_PRESS_MILLIS 2000L
@@ -18,7 +20,7 @@
 const int LED_COUNT = 35;
 
 // enums
-enum buttonPressed { NoPress, ShortPress, LongPress };
+// enum buttonPressed { NoPress, ShortPress, LongPress };
 
 // functions
 void set_timer(long time);
@@ -26,8 +28,7 @@ uint32_t colorToUInt(uint8_t red, uint8_t green, uint8_t blue);
 uint8_t UIntToColor(uint8_t rgbSelector, uint32_t color);
 void writeLEDs();
 void updateTimer();
-void restartTimer();
-enum buttonPressed buttonEvaluation();
+unsigned long restartTimer();
 void buttonHandling();
 void checkPauseTime();
 
@@ -59,7 +60,7 @@ long oldRotaryPosition = -99;
 
 void loop() {
   buttonHandling();
-  restartTimer();
+  // restartTimer();
   updateTimer();
 
   writeLEDs();
@@ -140,6 +141,8 @@ void updateTimer() {
   long remainingTime;
   if (!pause && running) {
     remainingTime = long(endTime - millis());
+  } else if (!running) {
+    remainingTime = restartTimer();
   }
   if (remainingTime > 0) {
     set_timer(remainingTime);
@@ -148,7 +151,7 @@ void updateTimer() {
   }
 }
 
-void restartTimer() {
+unsigned long restartTimer() {
   if (!running) {
     working = !working;
     if (working) {
@@ -159,39 +162,7 @@ void restartTimer() {
     running = true;
     pause = true;
   }
-}
-
-enum buttonPressed buttonEvaluation() {
-  const uint8_t retriggerSupressMillis = 2;
-  static bool button_pressure;
-  static unsigned long buttonTimer;
-  static unsigned long retriggerSupress = 0;
-  enum buttonPressed returnVal = NoPress;
-
-  if (retriggerSupress < millis()) {
-    if (!digitalRead(BUTTON_PIN) && !button_pressure) {
-      buttonTimer = millis();
-      button_pressure = true;
-    }
-
-    if (button_pressure && digitalRead(BUTTON_PIN)) {
-      if ((buttonTimer + LONG_PRESS_MILLIS) < millis()) {
-        returnVal = LongPress;
-      } else {
-        returnVal = ShortPress;
-      }
-#ifdef DEBUG
-      Serial.println(retriggerSupress);
-
-      Serial.println(millis());
-      Serial.println((returnVal == LongPress) ? "long press released"
-                                              : "short press released");
-#endif
-      button_pressure = false;
-      retriggerSupress = millis() + retriggerSupressMillis;
-    }
-  }
-  return returnVal;
+  return endTime - millis();
 }
 
 void buttonHandling() {
