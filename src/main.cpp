@@ -10,7 +10,7 @@
 #define PIN_ROTARY_B 6
 #define BUTTON_PIN 9
 
-#define SECOND 20L // how many millis do a second have
+#define SECOND 1000L // how many millis do a second have
 #define LEDUPDATETIME 100L
 
 #define LONG_PRESS_MILLIS 2000L
@@ -59,10 +59,10 @@ bool pause = false;
 long oldRotaryPosition = -99;
 
 void loop() {
-  buttonHandling();
-  // restartTimer();
   updateTimer();
-
+  buttonHandling();
+  checkPauseTime();
+  // restartTimer();
   writeLEDs();
 #ifdef DEBUG
   long newRotaryPosition = myEnc.read();
@@ -77,7 +77,7 @@ void set_timer(long time) {
   uint8_t minutes = time / (SECOND * 60L);
   uint16_t overmillis = time % (SECOND * 60);
   uint8_t led_counter = 0;
-  for (int ii; ii < LED_COUNT; ii++) {
+  for (int ii = 0; ii < LED_COUNT; ii++) {
     leds[ii] = 0;
   }
   for (; led_counter < minutes and led_counter < LED_COUNT; led_counter++) {
@@ -92,10 +92,6 @@ void set_timer(long time) {
   if (led_counter < LED_COUNT) {
     leds[led_counter] = 0;
   }
-#ifdef DEBUG
-
-  // Serial.println(255L * overmillis / (60L * SECOND));
-#endif
 }
 
 unsigned long nextchange = 0;
@@ -139,15 +135,17 @@ void writeLEDs() {
 
 void updateTimer() {
   long remainingTime;
-  if (!pause && running) {
-    remainingTime = long(endTime - millis());
-  } else if (!running) {
+  if (!running and pause) {
     remainingTime = restartTimer();
+    running = true;
+  } else if (!pause) {
+    remainingTime = long(endTime - millis());
   }
   if (remainingTime > 0) {
     set_timer(remainingTime);
   } else {
     running = false;
+    pause = true;
   }
 }
 
@@ -159,7 +157,6 @@ unsigned long restartTimer() {
     } else {
       endTime = millis() + FIVE_MINUTES;
     }
-    running = true;
     pause = true;
   }
   return endTime - millis();
@@ -167,11 +164,17 @@ unsigned long restartTimer() {
 
 void buttonHandling() {
   enum buttonPressed event = buttonEvaluation();
+#ifdef DEBUG
+  if (event != NoPress) {
+
+    Serial.print(millis());
+    Serial.print(" - ");
+    Serial.println((event == LongPress) ? "long press released"
+                                        : "short press released");
+  }
+#endif
   if (running) {
     switch (event) {
-    case ShortPress:
-      pause = !pause;
-      break;
 
     case LongPress:
       pause = true;
@@ -181,11 +184,10 @@ void buttonHandling() {
     default:
       break;
     }
-  } else {
-    if (event == ShortPress) {
-      pause = false;
-      running = true;
-    }
+  }
+  if (event == ShortPress) {
+    pause = !pause;
+    running = true;
   }
 }
 
@@ -193,7 +195,6 @@ bool wasPaused = false;
 unsigned long pauseTime = 0L;
 
 void checkPauseTime() {
-
   if (wasPaused && !pause) {
     endTime += millis() - pauseTime;
   } else if (!wasPaused && pause) {

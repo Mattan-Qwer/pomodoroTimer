@@ -23,12 +23,7 @@ enum buttonPressed buttonEvaluation() {
       } else {
         returnVal = ShortPress;
       }
-#ifdef DEBUG
-      Serial.println(retriggerSupress);
-      Serial.println(millis());
-      Serial.println((returnVal == LongPress) ? "long press released"
-                                              : "short press released");
-#endif
+
       button_pressure = false;
       retriggerSupress = millis() + retriggerSupressMillis;
     }
